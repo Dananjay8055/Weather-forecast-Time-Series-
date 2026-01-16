@@ -106,7 +106,8 @@ def main():
     out_path = os.path.abspath(os.path.join("data", "daily_temperature.csv"))
     df.to_csv(out_path, index=False)
 
-    print(f"✅ Real-time NOAA data updated: {out_path}")
+    # Avoid printing emoji which can cause UnicodeEncodeError on some consoles
+    print(f"Real-time NOAA data updated: {out_path}")
 
 
 if __name__ == "__main__":

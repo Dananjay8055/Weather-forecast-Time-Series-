@@ -67,11 +67,56 @@ def train_and_save(
         plt.close()
         print(f"Plot saved to: {plot_path}")
 
+        # --- 3D visualization (optional) ---
+        try:
+            from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+            import numpy as np
+
+            fig = plt.figure(figsize=(14, 8))
+            ax = fig.add_subplot(111, projection='3d')
+
+            time_index = np.arange(len(dates))
+
+            # Actual vs Predicted in 3D
+            ax.plot(time_index, y_test.values, predictions, color="#00E5FF", linewidth=2.5, label="Actual vs Predicted")
+            ax.scatter(time_index, y_test.values, predictions, color="#FF6F00", s=8)
+
+            ax.set_title("3D Weather Forecasting Model (Time Series Prediction)", fontsize=16, fontweight='bold')
+            ax.set_xlabel("Time index")
+            ax.set_ylabel("Actual TMAX (°C)")
+            ax.set_zlabel("Predicted TMAX (°C)")
+
+            out3d = os.path.join(output_dir, "weather_forecasting_3d.png")
+            plt.savefig(out3d, dpi=300, bbox_inches="tight")
+            plt.close()
+            print(f"3D plot saved to: {out3d}")
+        except Exception as e:
+            print(f"Skipping 3D plot generation: {e}")
+
     # Save trained model
     if save_model:
         model_path = os.path.join(model_dir, "linear_regression.joblib")
         joblib.dump(model, model_path)
         print(f"Model saved to: {model_path}")
+
+    # -----------------------------
+    # Save latest prediction for frontend
+    # -----------------------------
+    try:
+        # Build features for tomorrow: use last observed TMAX as lag_1 and
+        # the most recent 7-day mean as rolling_7
+        last_tmax = df["TMAX"].iloc[-1]
+        last_7 = df["TMAX"].iloc[-7:].mean()
+        tomorrow_X = pd.DataFrame([[last_tmax, last_7]], columns=["lag_1", "rolling_7"])
+        tomorrow_prediction = model.predict(tomorrow_X)
+
+        os.makedirs(output_dir, exist_ok=True)
+        with open(os.path.join(output_dir, "latest_prediction.txt"), "w") as f:
+            f.write(f"{tomorrow_prediction[0]:.2f}")
+
+        print(f"Latest prediction saved to: {os.path.join(output_dir, 'latest_prediction.txt')}")
+    except Exception as e:
+        print(f"Could not save latest prediction: {e}")
 
 
 def main():
